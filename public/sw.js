@@ -5,8 +5,8 @@
 // only store there the APP SHELL
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v3';
-const CACHE_DYNAMIC_NAME = 'dynamic-v2';
+const CACHE_STATIC_NAME = 'static-v15';
+const CACHE_DYNAMIC_NAME = 'dynamic-v6';
 
 
 // install event triggered by browser
@@ -28,10 +28,9 @@ self.addEventListener('install', event => {
                 cache.addAll([
                     '/', // request = mydomain/
                     '/index.html', // request = mydomain/index.html
-                    '/src/js/app.js', // request = mydomain/src/js/app.js
-                    '/src/js/feed.js', // request = mydomain/src/js/feed.js
-
-                    // no need to cache them because only legacy browser - but because here no build tool do it anyway for performance
+                    '/offline.html',
+                    '/src/js/app.js',
+                    '/src/js/feed.js',
                     '/src/js/promise.js',
                     '/src/js/fetch.js',
                     '/src/js/material.min.js',
@@ -57,11 +56,11 @@ self.addEventListener('activate', event => {
             .then(keyList => {
                 // takes an array of promises and waits for them to finish
                 return Promise.all(keyList.map(key => {
-                  if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
-                      console.log('[SERVICE WORKER] Removing old cache', key);
-                    //   return a promise that will be stored in array returned by map()
-                      return caches.delete(key);
-                  }
+                    if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
+                        console.log('[SERVICE WORKER] Removing old cache', key);
+                        //   return a promise that will be stored in array returned by map()
+                        return caches.delete(key);
+                    }
                 }
                 ))
             })
@@ -111,7 +110,12 @@ self.addEventListener('fetch', event => {
                                 });
                         })
                         .catch(err => {
-                            // do nothing
+                            caches.open(CACHE_STATIC_NAME)
+                                .then(cache => {
+                                    // return the fallback page if no network and not in cache
+                                    return cache.match('/offline.html');
+                                }
+                                )
                         });
                 }
             })
