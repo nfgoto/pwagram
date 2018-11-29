@@ -20,6 +20,18 @@ function openCreatePostModal() {
 
     deferredPrompt = null;
   }
+
+  // get rid of service worker
+  /* if ('serviceWorker' in navigator) {
+    // get all active registrations
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => {
+        registrations.forEach(registration => {
+          // unregisters the service workers and cleans the entire cache
+          registration.unregister();
+        });
+      });
+  } */
 }
 
 function closeCreatePostModal() {
@@ -47,8 +59,13 @@ const onSaveButtonClick = event => {
   }
 }
 
+function clearCart(params) {
+  while (sharedMomentsArea.hasChildNodes()) {
+    sharedMomentsArea.removeChild(sharedMomentsArea.lastChild)
+  }
+}
 
-function createCard() {
+function createCard(data) {
   const cardWrapper = document.createElement('div');
   const cardTitleTextElement = document.createElement('h2');
   const cardSupportingText = document.createElement('div');
@@ -58,7 +75,7 @@ function createCard() {
   cardWrapper.className = 'shared-moment-card mdl-card mdl-shadow--2dp';
 
   cardTitle.className = 'mdl-card__title';
-  cardTitle.style.backgroundImage = 'url("/src/images/sf-boat.jpg")';
+  cardTitle.style.backgroundImage = `url(${data.image})`;
   cardTitle.style.backgroundSize = 'cover';
   cardTitle.style.height = '180px';
 
@@ -66,12 +83,12 @@ function createCard() {
 
   cardTitleTextElement.style.color = 'white'
   cardTitleTextElement.className = 'mdl-card__title-text';
-  cardTitleTextElement.textContent = 'San Francisco Trip';
+  cardTitleTextElement.textContent = data.title;
 
   cardTitle.appendChild(cardTitleTextElement);
 
   cardSupportingText.className = 'mdl-card__supporting-text';
-  cardSupportingText.textContent = 'In San Francisco';
+  cardSupportingText.textContent = data.location;
   cardSupportingText.style.textAlign = 'center';
 
   // cardSaveButton.textContent = 'Save';
@@ -83,10 +100,53 @@ function createCard() {
   sharedMomentsArea.appendChild(cardWrapper);
 }
 
-fetch('https://httpbin.org/get')
-  .then(function (res) {
-    return res.json();
-  })
-  .then(function (data) {
-    createCard();
+// ================= BEST STRATEGY = CACHE, THEN NETWORK =================
+const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
+// to make sure that the cache does not override network data
+let networkDataReceived = false;
+
+// access the cache storage directly from the page without going through the SW
+// 1) access to cache 
+// 1) simultaneously access the service worker
+// 2) data from cache sent to page
+// 2) SW tries to get response from network
+// 3) data sent back from network
+// 4) store fetched data in cache storage (OPTIONAL)
+// 5) fetched data is sent to the page without necessarily caching it
+
+const updateUI = postList => {
+  postList.forEach(post => {
+    createCard(post);
   });
+}
+
+const fromObjArr = obj => {
+  const postData = [];
+
+  for (let key in obj) {
+    postData.push(obj[key])
+  }
+
+  return postData;
+}
+
+
+fetch(url)
+  .then(res => res.json())
+  .then((data) => {
+    networkDataReceived = true;
+    console.log('FROM WEB ', networkDataReceived, data);
+
+    updateUI(fromObjArr(data));
+  });
+
+
+if ('indexedDB' in window) {
+  readAllData('posts')
+    .then(data => {
+      if (!networkDataReceived) {
+        console.log('FROM INDEXEDDB', data);
+        updateUI(data);
+      }
+    });
+}

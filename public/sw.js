@@ -1,3 +1,9 @@
+// import a script from a file
+importScripts('/src/js/idb.js')
+importScripts('/src/js/utility.js')
+
+
+
 // self refers to the server worker
 // listenable events to service workers, not DOM events
 
@@ -5,8 +11,42 @@
 // only store there the APP SHELL
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v15';
-const CACHE_DYNAMIC_NAME = 'dynamic-v6';
+const CACHE_STATIC_NAME = 'static-v41';
+const CACHE_DYNAMIC_NAME = 'dynamic-v13';
+const STATIC_FILES = [
+    '/', // request = mydomain/
+    '/index.html', // request = mydomain/index.html
+    '/offline.html',
+    '/src/js/app.js',
+    '/src/js/feed.js',
+    '/src/js/idb.js',
+    '/src/js/promise.js',
+    '/src/js/fetch.js',
+    '/src/js/material.min.js',
+    '/src/css/app.css',
+    '/src/css/feed.css',
+    '/src/images/pwa-logo.png',
+    'https://fonts.googleapis.com/css?family=Roboto:400,700',
+    'https://fonts.googleapis.com/icon?family=Material+Icons',
+    'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
+];
+
+/* const trimCache = (cacheNane, maxItems) => {
+    // open the cache
+    caches.open(cacheNane)
+        .then(cache => {
+            return cache.keys()
+                .then(keys => {
+                    if (keys.length > maxItems) {
+                        // remove oldest item from sub cache
+                        cache.delete(keys[0])
+                            // recursion to clean up the sub cache until less then maxItems
+                            .then(trimCache(cacheNane, maxItems))
+                    }
+                });
+        })
+
+}ò */
 
 
 // install event triggered by browser
@@ -25,22 +65,7 @@ self.addEventListener('install', event => {
                 console.log('[SERVICE WORKER] Precaching app shell (core features of app)');
                 // make a REQUEST to the resource from server, download it and and add it to the cache
 
-                cache.addAll([
-                    '/', // request = mydomain/
-                    '/index.html', // request = mydomain/index.html
-                    '/offline.html',
-                    '/src/js/app.js',
-                    '/src/js/feed.js',
-                    '/src/js/promise.js',
-                    '/src/js/fetch.js',
-                    '/src/js/material.min.js',
-                    '/src/css/app.css',
-                    '/src/css/feed.css',
-                    '/src/images/pwa-logo.png',
-                    'https://fonts.googleapis.com/css?family=Roboto:400,700',
-                    'https://fonts.googleapis.com/icon?family=Material+Icons',
-                    'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
-                ]);
+                cache.addAll(STATIC_FILES);
             })
     );
 });
@@ -69,7 +94,96 @@ self.addEventListener('activate', event => {
     return self.clients.claim();
 });
 
+// ================= BEST STRATEGY = CACHE, THEN NETWORK =================
+// access the cache storage directly from the page without going through the SW
+// 1) access to cache 
+// 1) simultaneously access the service worker
+// 2) data from cache sent to page
+// 2) SW tries to get response from network
+// 3) data sent back from network
+// 4) store fetched data in cache storage (OPTIONAL)
+// 5) fetched data is sent to the page without necessarily caching it
+
+
+self.addEventListener('fetch', event => {
+    // this is the only url for which we should the SW counterpart, not for others
+    const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
+
+
+    if (event.request.url.indexOf(url) > -1) {
+        event.respondWith(
+            fetch(event.request)
+                .then(res => {
+                    // store the formatted response into indexedDB
+                    const copyResponse = res.clone();
+                    copyResponse.json()
+                        .then(data => {
+                            // store every item in indexedDBk
+                            for (let key in data) {
+                                // store post in indexedDB
+                                writeData('posts', data[key]);
+                            }
+                        });
+
+                    // return the response so that the page can use it
+                    return res;
+                })
+        );
+    } else
+        // check if request is about a static file
+        if (STATIC_FILES.includes(event.request.url)) {
+            // implement cache only - only updated when SW reinstalled
+            event.respondWith(
+                // we don't care about the netwrk, we only return assets from cache
+                caches.match(event.request)
+            )
+        } else {
+            // fallback on the cache and network strategy
+            event.respondWith(
+                caches.match(
+                    event.request
+                )
+                    .then(response => {
+                        if (response) {
+                            return response;
+                        } else {
+                            return fetch(event.request)
+                                .then(res => {
+                                    return caches.open(CACHE_DYNAMIC_NAME)
+                                        .then(cache => {
+                                            // trim sub cache before puting more
+                                            // trimCache(CACHE_DYNAMIC_NAME, 3);
+                                            cache.put(
+                                                event.request.url,
+                                                res.clone()
+                                            );
+
+                                            return res;
+                                        });
+                                })
+                                .catch(err => {
+                                    return caches.open(CACHE_STATIC_NAME)
+                                        .then(cache => {
+                                            // routing strategy
+                                            // only return the offline page if the request is to a page
+                                            if (event.request.headers.get('accept').includes('text/html')) {
+                                                return cache.match('/offline.html');
+                                            }
+                                            // you can return ant fallback resource that was cached (image...)
+                                        })
+                                });
+                        }
+                    })
+            )
+        }
+});
+
+
+
+// ================= CACHE WITH NETWORK FALLBACK STRATEGY ================= 
+
 // non-lifecycle event (here, onetriggered by HTML), fetch = when browser loads smth
+/*
 self.addEventListener('fetch', event => {
     // override data sent back, setting to null makes site unreachable because nothing sent back
     // respondWith expects a promise a input argument
@@ -110,7 +224,7 @@ self.addEventListener('fetch', event => {
                                 });
                         })
                         .catch(err => {
-                            caches.open(CACHE_STATIC_NAME)
+                            return caches.open(CACHE_STATIC_NAME)
                                 .then(cache => {
                                     // return the fallback page if no network and not in cache
                                     return cache.match('/offline.html');
@@ -121,3 +235,49 @@ self.addEventListener('fetch', event => {
             })
     )
 });
+*/
+
+// ================= CACHE ONLY STRATEGY ================= 
+/*self.addEventListener('fetch', event => {
+    event.respondWith(
+        // we don't care about the netwrk, we only return assets from cache
+        caches.match(event.request)
+    )
+});*/
+
+
+// ================= NETWORK ONLY STRATEGY =================
+/* self.addEventListener('fetch', event => {
+    event.respondWith(
+        // we don't care about the netwrk, we only return assets from cache
+        fetch(event.request)
+    )
+}); */
+
+// ================= NETWORK WITH CACHE FALLBACK STRATEGY =================
+// bad UX because user is shown cached version after timeout
+// mostly for resources that you can fetch in the background
+/* self.addEventListener('fetch', event => {
+    // fetch first
+    fetch(event.request)
+        // dynamic caching of fetched resources
+        .then(res => {
+            return caches.open(CACHE_DYNAMIC_NAME)
+                .then(cache => {
+                    cache.put(
+                        res.url,
+                        res.clone()
+                    );
+
+                    return res;
+                });
+        })
+        // network request fail
+        .catch(err => {
+            return caches.match(
+                event.request
+            );
+        })
+}); */
+
+
