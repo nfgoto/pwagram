@@ -11,8 +11,8 @@ importScripts('/src/js/utility.js')
 // only store there the APP SHELL
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v41';
-const CACHE_DYNAMIC_NAME = 'dynamic-v13';
+const CACHE_STATIC_NAME = 'static-v45';
+const CACHE_DYNAMIC_NAME = 'dynamic-v14';
 const STATIC_FILES = [
     '/', // request = mydomain/
     '/index.html', // request = mydomain/index.html
@@ -116,12 +116,15 @@ self.addEventListener('fetch', event => {
                 .then(res => {
                     // store the formatted response into indexedDB
                     const copyResponse = res.clone();
-                    copyResponse.json()
+
+                    // clear DB to avoid keeping data deleted on server
+                    clearAllData('posts')
+                        .then(() => copyResponse.json())
                         .then(data => {
                             // store every item in indexedDBk
                             for (let key in data) {
                                 // store post in indexedDB
-                                writeData('posts', data[key]);
+                                writeData('posts', data[key])
                             }
                         });
 

@@ -20,7 +20,7 @@ const dbPromise = idb.open(
     });
 
 const writeData = (st, data) => {
-//   use st input parameter name to avoid namespace collision !!
+    //   use st input parameter name to avoid namespace collision !!
     return dbPromise
         .then(db => {
             // create a transaction
@@ -37,7 +37,7 @@ const writeData = (st, data) => {
 };
 
 const readAllData = st => {
-     return dbPromise
+    return dbPromise
         .then(db => {
             const tx = db.transaction(st, 'readonly');
             const store = tx.objectStore(st);
@@ -46,5 +46,33 @@ const readAllData = st => {
         });
 };
 
+// good practice to clear the DB before updating it because can keep copy of data deleted on the server
+const clearAllData = (st) => {
+    return dbPromise
+        .then(db => {
+            const tx = db.transaction(st, 'readwrite');
+            const store = tx.objectStore(st);
+            // remove all elements from the store
+            store.clear();
+            // return complete on every write operation to maintain DB ontegrity
+            return tx.complete;
+        });
+}
+
+const deleteItemFromData = (st, id) => {
+    // don0t need to return because the promise is handled
+    dbPromise
+        .then(db => {
+            const tx = db.transaction(st, 'readwrite');
+            const store = tx.objectStore(st);
+            // remove elements from the store
+            store.delete(id);
+            return tx.complete;
+        })
+        // here
+        .then(() => {
+            console.log('item deleted');
+        });
+}
 
 

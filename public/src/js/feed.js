@@ -59,7 +59,7 @@ const onSaveButtonClick = event => {
   }
 }
 
-function clearCart(params) {
+function clearCart() {
   while (sharedMomentsArea.hasChildNodes()) {
     sharedMomentsArea.removeChild(sharedMomentsArea.lastChild)
   }
@@ -137,6 +137,7 @@ fetch(url)
     networkDataReceived = true;
     console.log('FROM WEB ', networkDataReceived, data);
 
+    clearCart();
     updateUI(fromObjArr(data));
   });
 
@@ -146,6 +147,7 @@ if ('indexedDB' in window) {
     .then(data => {
       if (!networkDataReceived) {
         console.log('FROM INDEXEDDB', data);
+        clearCart();
         updateUI(data);
       }
     });
