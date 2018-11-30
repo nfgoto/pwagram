@@ -114,7 +114,7 @@ function createCard(data) {
 }
 
 // ================= BEST STRATEGY = CACHE, THEN NETWORK =================
-const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
+const url = 'https://pwagram-f2685.firebaseapp.com';
 // to make sure that the cache does not override network data
 let networkDataReceived = false;
 

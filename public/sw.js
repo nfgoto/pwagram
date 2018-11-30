@@ -11,7 +11,7 @@ importScripts('/src/js/utility.js')
 // only store there the APP SHELL
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v60';
+const CACHE_STATIC_NAME = 'static-v61';
 const CACHE_DYNAMIC_NAME = 'dynamic-v14';
 const STATIC_FILES = [
     '/', // request = mydomain/
@@ -30,7 +30,7 @@ const STATIC_FILES = [
     'https://fonts.googleapis.com/icon?family=Material+Icons',
     'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
 ];
-const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
+const url = 'https://pwagram-f2685.firebaseapp.com';
 
 /* const trimCache = (cacheNane, maxItems) => {
     // open the cache
@@ -318,8 +318,12 @@ self.addEventListener('sync', event => {
                                 res => {
                                     // ONLY delete from indexedDB if data sent succesfully
                                     if (res.ok) {
-                                        console.log('[SERVICE WORKER] POST SENT');
-                                        deleteItemFromData('sync-posts', post.id)
+                                        res
+                                            .json()
+                                            .then(resData => {
+                                                console.log('[SERVICE WORKER] POST SENT');
+                                                deleteItemFromData('sync-posts', resData.id)
+                                            });
                                     }
                                 }
                             )
