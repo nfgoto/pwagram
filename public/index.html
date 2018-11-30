@@ -88,7 +88,10 @@
             </div>
           </form>
         </div>
-        <img src="/src/images/pwa-logo.png" alt="PWA - The future of apps!" class="main-image">
+        <img src="/src/images/main-image.jpg" srcset="/src/images/main-image-lg.jpg 1200w,
+        /src/images/main-image-sm.jpg 900w,
+        /src/images/main-image-sm.jpg 480w"
+          alt="PWA - The future of apps!" class="main-image">
         <div class="page-content">
           <h5 class="text-center mdl-color-text--primary">Share your Moments</h5>
           <div id="shared-moments"></div>
@@ -107,11 +110,11 @@
   </div>
   <script defer src="/src/js/material.min.js"></script>
   <!-- Polyfills -->
-<script src="/src/js/promise.js"></script>
-<script src="/src/js/fetch.js"></script>
-<!-- Polyfills -->
-<script src="/src/js/idb.js"></script>
-<script src="/src/js/utility.js"></script>
+  <script src="/src/js/promise.js"></script>
+  <script src="/src/js/fetch.js"></script>
+  <!-- Polyfills -->
+  <script src="/src/js/idb.js"></script>
+  <script src="/src/js/utility.js"></script>
   <script src="/src/js/app.js"></script>
   <script src="/src/js/feed.js"></script>
 </body>

@@ -5,6 +5,13 @@ var sharedMomentsArea = document.querySelector('#shared-moments');
 
 function openCreatePostModal() {
   createPostArea.style.display = 'block';
+  // to not apply the style immediately
+  setTimeout(() => {
+    // position we want to end in
+    createPostArea.style.transform = 'translateY(0)';
+
+  }, 1)
+
   if (deferredPrompt) {
     deferredPrompt.prompt();
 
@@ -35,7 +42,10 @@ function openCreatePostModal() {
 }
 
 function closeCreatePostModal() {
-  createPostArea.style.display = 'none';
+  setTimeout(() => {
+    createPostArea.style.transform = 'translateY(100vh)';
+  }
+    , 3)
 }
 
 shareImageButton.addEventListener('click', openCreatePostModal);
@@ -77,7 +87,6 @@ function createCard(data) {
   cardTitle.className = 'mdl-card__title';
   cardTitle.style.backgroundImage = `url(${data.image})`;
   cardTitle.style.backgroundSize = 'cover';
-  cardTitle.style.height = '180px';
 
   cardWrapper.appendChild(cardTitle);
 

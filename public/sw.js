@@ -11,7 +11,7 @@ importScripts('/src/js/utility.js')
 // only store there the APP SHELL
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v45';
+const CACHE_STATIC_NAME = 'static-v56';
 const CACHE_DYNAMIC_NAME = 'dynamic-v14';
 const STATIC_FILES = [
     '/', // request = mydomain/
