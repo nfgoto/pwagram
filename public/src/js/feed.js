@@ -1,7 +1,11 @@
-var shareImageButton = document.querySelector('#share-image-button');
-var createPostArea = document.querySelector('#create-post');
-var closeCreatePostModalButton = document.querySelector('#close-create-post-modal-btn');
-var sharedMomentsArea = document.querySelector('#shared-moments');
+const shareImageButton = document.querySelector('#share-image-button');
+const createPostArea = document.querySelector('#create-post');
+const closeCreatePostModalButton = document.querySelector('#close-create-post-modal-btn');
+const sharedMomentsArea = document.querySelector('#shared-moments');
+const form = document.querySelector('form');
+const titleInput = document.querySelector('#title');
+const locationInput = document.querySelector('#location');
+
 
 function openCreatePostModal() {
   createPostArea.style.display = 'block';
@@ -161,3 +165,92 @@ if ('indexedDB' in window) {
       }
     });
 }
+
+const sendData = () => {
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      id: new Date().toDateString(),
+      title: titleInput.value,
+      location: locationInput.value,
+      image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
+    })
+  })
+    .then(res => {
+      console.log('Sent Data', res);
+      updateUI()
+    });
+};
+
+
+// listen to the submit event
+form.addEventListener('submit', event => {
+  // prevent page from sending to server and reloading
+  event.preventDefault();
+
+  // .value to access the user input text
+  if (titleInput.value.trim() === '' || locationInput.value.trim() === '') {
+    alert('Please Enter Valid Data.');
+
+    // ignore the submit
+    return;
+  }
+
+  closeCreatePostModal();
+
+  // register background synchronization request
+  if (
+    'serviceWorker' in navigator &&
+    // SyncManager API for background Sync - not production ready as of 12/2018
+    'SyncManager' in window
+  ) {
+    // make sure that the SW is ready (installed and activated)
+    navigator.serviceWorker.ready
+      .then(sw => {
+        // need to acces the SW here because the SW cannot listen to the form events (remember no access to the DOM)
+
+        const post = {
+          // uid
+          id: new Date().toISOString(),
+          title: titleInput.value,
+          location: locationInput.value
+        }
+
+        // store post in indexedDB
+        writeData('sync-posts', post)
+          .then(() => {
+            // register sync event ONLY AFTER data to be posted has been stored
+            // sw.sync = gives access to SyncManager  from SW POV
+            // takes an id for the task
+            return sw.sync.register('sync-new-posts');
+          })
+          .then(() => {
+            // getthe toaster element
+            const snackbarContainer = document.querySelector('#confirmation-toast');
+
+            const data = { message: 'Your Post is Saved for Synching' };
+            snackbarContainer.MaterialSnackbar.showSnackbar(data);
+          })
+          .catch(err => {
+            console.log('SYNC ERROR', err);
+          });
+      });
+
+  }
+  // SyncManager not supported
+  else {
+    // send data directly to the server
+    sendData();
+  }
+
+
+
+
+
+});
+
+

@@ -17,6 +17,17 @@ const dbPromise = idb.open(
                 }
             );
         }
+        // store for backgeound sync
+        if (!db.objectStoreNames.contains('sync-posts')) {
+            db.createObjectStore(
+                'sync-posts',
+                // set primary key
+                {
+                    // name used to retrieve data
+                    keyPath: 'id'
+                }
+            );
+        }
     });
 
 const writeData = (st, data) => {
@@ -60,8 +71,8 @@ const clearAllData = (st) => {
 }
 
 const deleteItemFromData = (st, id) => {
-    // don0t need to return because the promise is handled
-    dbPromise
+    // don't need to return because the promise is handled
+    return dbPromise
         .then(db => {
             const tx = db.transaction(st, 'readwrite');
             const store = tx.objectStore(st);

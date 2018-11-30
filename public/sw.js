@@ -11,7 +11,7 @@ importScripts('/src/js/utility.js')
 // only store there the APP SHELL
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v56';
+const CACHE_STATIC_NAME = 'static-v60';
 const CACHE_DYNAMIC_NAME = 'dynamic-v14';
 const STATIC_FILES = [
     '/', // request = mydomain/
@@ -30,6 +30,7 @@ const STATIC_FILES = [
     'https://fonts.googleapis.com/icon?family=Material+Icons',
     'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
 ];
+const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
 
 /* const trimCache = (cacheNane, maxItems) => {
     // open the cache
@@ -107,7 +108,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
     // this is the only url for which we should the SW counterpart, not for others
-    const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
+    //const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
 
 
     if (event.request.url.indexOf(url) > -1) {
@@ -283,4 +284,51 @@ self.addEventListener('fetch', event => {
         })
 }); */
 
+// register the sync event
+// this event will be sent when connectivity is reestablished (or always when there is connection)
+self.addEventListener('sync', event => {
+    // send reauest to the server
+    console.log('[SERVICE WORKER] BACKGROUND SYNCHING', event);
 
+    // check the event tag
+    if (event.tag === 'sync-new-posts') {
+        console.log('[SERVICE WORKER] SYNCHING NEW POST');
+
+        // waitt until data is sent
+        event.waitUntil(
+            readAllData('sync-posts')
+                .then(data => {
+                    // loop through new posts to synch
+                    for (let post of data) {
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                id: post.id,
+                                title: post.title,
+                                location: post.location,
+                                image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
+                            })
+                        })
+                            // clean the sync-new-posts store
+                            .then(
+                                res => {
+                                    // ONLY delete from indexedDB if data sent succesfully
+                                    if (res.ok) {
+                                        console.log('[SERVICE WORKER] POST SENT');
+                                        deleteItemFromData('sync-posts', post.id)
+                                    }
+                                }
+                            )
+                            .catch(err => {
+                                console.log('[SERVICE WORKER] ERROR WHILE SENDING DATA', err);
+                            });
+                    }
+                })
+        );
+    }
+}
+);
