@@ -143,3 +143,9 @@ each subscription stored on the server has its own endpoint
 	that is why if you unregister an existing SW in a browser you must also remove the associated subscription stored in the DB server
 	A newly created SW will generate new sunscriptions
 
+
+When you update the SW
+	do not unregister it by cleaning the cache because the saved subscriptions on the server DB will be useless
+	reload the page to install the new version of the SW
+	close the tabs with the app
+	open the app in a new tab to activate the new version of the SW
