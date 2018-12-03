@@ -9,7 +9,7 @@ firebase-debug.log*
 
 
 # firebase backend
-functions/
+functions/**
 
 # Firebase cache
 .firebase/
