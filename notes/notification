@@ -1,0 +1,129 @@
+WEB PUSH NOTIFICATIONS
+
+They are made out of two elements:
+- push = some server pushes info to our web app
+- notification = what we show to the user
+
+ The user needs to enabled notifications on his device
+
+notifications are totally independent from pushing
+
+notif are triggered from JS
+
+We push info from a service tp our webapp 
+
+In the webapp we can check for subscriptions 
+
+	a subscription =  a browser on a given device (Chrome on Linux, different from Firefox on Linux)
+	subscriptions are managed by the browser for you
+	you use the SW to request and work with subscriptions
+
+	you can check if there is already a subscription 
+	you can create a new one
+ 
+A new subscription is created in JS with the SW
+
+Subscriptions for SW needs external Web servers because a push notification needs to be delivered to our webapp and for that we need our servers otherwise it would just be our webapp alone and it would not work if it is closed and no way to show notifications or send info
+
+ Subcriptions = BROWSER + DEVICE combination
+
+To deliver a message through push to our webapp, we need to hop by the browser because the webapp is just running in the browser and not receiving any incoming messages
+
+we could use web sockets to establish full duplex connection between browser and server but it is a different technology from SW and would not work if the app was closed
+
+we need the help of the browser to get info even if our web aoo is not open that any created subscription involves info about the browser vendor (each browser vendor has its oewn push server)
+
+we as dev don't configure these servers that are own by Google, Mowilla.. but we set up a new subscription in JS , it will auto reach out to that push server and fetch an endpoint for us
+
+this endpoint is simply a url  to which we can later sent  new push messages so that the browser renders a service : will forward them to our webapp 
+
+ a newly created subscription holds the push API endpoint + authentication info to make sure that only we can push to our web app
+
+we also need our own server 
+
+the SW which creates the new subscription which holds info about that endpoint (browser server render push endpoint) can send this new created subscription to your backend server to store it there (on a persistent DB) BECAUSE otherwise could not be used when the web app is closed 
+
+
+it will be our own server that will push messages to our webapp
+
+after we do an action on the frontend we could push notifications to all of our subscriptions (browser + device combinatio
+
+a push notification will be sent to the browser vendor API endpoint we stored in the subscription,
+
+once reaches push server by the browser vendor , we also sent auth info to be able to redeliver it to the webapp then the browser vendor push server then delivers it to our web app
+
+	it delivers to the SW by triggering a PUSH EVENT 
+	With the SW we can display a notification with our webapp
+
+
+
+===========================================
+display notification
+====================================
+
+don't need a push event to display a notification
+
+you use the notifcation API to create and display a new noti
+
+you can set the notif body message  etc directly from normal JS, don't need SW
+
+you generally use them in conjunction with SWs because you can to show them to react to events
+
+notif via SW are necessary when working with push events can only be listened to by the SW
+
+
+=========================================
+creating push subscription
+========================================
+
+a subscription contains the endpoint URL of the browser vendor server to which we push our push messgaes
+
+anyone with this endpoint could send messages to that server and this server will forward them to our app 
+
+if our endpoint URL is found out, they could send messages to our users in our app and these messages would look as if they come from us
+
+we need to protect the push subscription
+	regSw.pushManager,subscribe({userVisibleOnly: true})
+
+userVisible: true  = push notifications send through our service are only visible to this user
+
+The security mechanism is that we will identify our own app (backend) server as the ONLY valid sourcesending new push messages
+
+so anyone else sending oush messages to that browser vendor  API endpoint will not get through
+
+To identify our own app server we need more than the IP address which is easy to spoof
+
+We need another approach based on asynetric cryptography (public/private key pair)
+
+You can put your public key in your frontend JS code (which is public)
+
+The corresponding private key will be store on our server which code is not supposed to be accessible without authentication
+
+The VAPID keys use JSON Web Token to carry identifying info and are converted to base64 strings that are easy to use
+
+we want to use VAPID keys to protect our push messages
+
+The Webpush package installed on our backend server will allow us to generate VAPID keys and send the push messages themselves
+
+You generate VAPID only once on your browser. If you generate another time, will render previous keys invalid on the full stack
+
+convert the base64 punlic vapid key to a uint8array value and pass that converted value to the "applicationServerKey" property of the configuration object of 
+	regSw.pushMananger({..., applicationServerKey: uint8ArrayVapidpublicKey)
+
+the vapid public key alone does not identify our server, it will be matched to the vapid private key on our backend server
+
+Ok, so we will save the browser vendor endpoint URL (reurned by the fulfilled promise of pushManager.subscribe()) to our backend DB via a REST API
+
+anyone with that URL could send push messages to our users
+
+the subscription object generated by pushManager,subscribe contains the endpoint to the browser vendor push server to which we have to send push messages to
+it also contains a keys object with the auth and p256h properties. these two keys and the endpoint incorporate our VAPID info.
+
+As soon as we start sending push notifications from ourapp server we need to pass the auth and p256dh keys as well as our private VAPID key, and the webpush package will use all that info to send a push reauest to the browser vendor endpoint, the request will authenticated as coming from our verified app server
+
+A subscription refers to a browser on a device and ALSO to the SW there BECAUSE the subscription is set up through the SW
+if you clear the SW registration in your frontend client, the subscription saved on our backend server will no longer work !!!!!
+When we unregistera SW, we render all subscriptions USELESS
+
+if we clear/unregister a SW, you need to clear the related subscriptions saved on our backend server
+
