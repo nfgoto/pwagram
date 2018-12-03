@@ -373,7 +373,34 @@ self.addEventListener('notificationclick', event => {
         }
         default: {
             console.log('ACTION CLICKED: ', action);
-            return notification.close();
+            // open a page
+            event.waitUntil(
+                // clients = all browser tasks managed to this SW
+                clients
+                    // access all the clients
+                    .matchAll()
+                    .then(
+                        allFoundClients => {
+                            //   find windows managed by this SW which are visible
+                            const openedCli = allFoundClients.find(
+                                // returns the first opened browser window managed by this SW
+                                cli => cli.visibilityState === 'visible'
+                            );
+
+                            if (openedCli) {
+                                // navigate to a url
+                                openedCli.navigate(notification.data.url);
+                                openedCli.focus();
+                            } else {
+                                // open a new tab or window
+                                clients.openWindow(notification.data.url);
+                            }
+
+                            return notification.close();
+                        }
+
+                    )
+            );
         }
     }
 });
@@ -389,7 +416,8 @@ self.addEventListener('push', event => {
     // the properties must have the same identifiers as the ones in the payload that we pass when sending the push notification on our backend server to the browser vendor endpoint
     let data = {
         title: 'New !',
-        Content: 'Something New Happened'
+        content: 'Something New Happened',
+        openUrl: '/'
     };
 
     // check if there is a payload/data attached to the received push notification
@@ -401,9 +429,15 @@ self.addEventListener('push', event => {
 
         // show a new notification
         const notificationOptions = {
-            body: data.Content,
+            body: data.content,
             icon: '/src/images/icons/app-icon-96x96.png',
-            badge: '/src/images/icons/app-icon-96x96.png'
+            badge: '/src/images/icons/app-icon-96x96.png',
+            // pass extra metadata to the notification (anything you want)
+            // data that can later be used upon interaction in the notification handlers
+            // available via event.notification.data in the notification handlers
+            data: {
+                url: data.openUrl
+            }
         };
 
         //wait to make sure the notification is displayed
