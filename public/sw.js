@@ -406,9 +406,11 @@ self.addEventListener('push', event => {
             badge: '/src/images/icons/app-icon-96x96.png'
         };
 
-        // display the notification
+        //wait to make sure the notification is displayed
         event.waitUntil(
             // have to access to the registration because the SW by itself cannot show the notification
+            // the registration is the part of the SW working in the browser
+            self.registration.showNotification(data.title, notificationOptions)
         );
     }
 });
