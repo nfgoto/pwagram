@@ -5,3 +5,8 @@
 .drawer-option {
   padding: 16px;
 }
+
+.enable-notifications {
+  /* do not display notification button to browser that don't support it */
+  display: none;
+}

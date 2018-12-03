@@ -114,7 +114,10 @@ function createCard(data) {
 }
 
 // ================= BEST STRATEGY = CACHE, THEN NETWORK =================
-const url = 'https://pwagram-f2685.firebaseapp.com';
+const dbUrl = 'https://pwagram-f2685.firebaseio.com/posts.json';
+
+const storePostDataCloudFunctionUrl = 'https://us-central1-pwagram-f2685.cloudfunctions.net/storePostData';
+
 // to make sure that the cache does not override network data
 let networkDataReceived = false;
 
@@ -143,31 +146,35 @@ const fromObjArr = obj => {
   return postData;
 }
 
-
-fetch(url)
+// fetch posts
+fetch(dbUrl)
   .then(res => res.json())
-  .then((data) => {
-    networkDataReceived = true;
-    console.log('FROM WEB ', networkDataReceived, data);
+  .then(
+    data => {
+      networkDataReceived = true;
+      console.log('FROM WEB ', networkDataReceived, data);
 
-    clearCart();
-    updateUI(fromObjArr(data));
-  });
+      clearCart();
+      updateUI(fromObjArr(data));
+    }
+  );
 
 
 if ('indexedDB' in window) {
   readAllData('posts')
-    .then(data => {
-      if (!networkDataReceived) {
-        console.log('FROM INDEXEDDB', data);
-        clearCart();
-        updateUI(data);
+    .then(
+      data => {
+        if (!networkDataReceived) {
+          console.log('FROM INDEXEDDB', data);
+          clearCart();
+          updateUI(data);
+        }
       }
-    });
+    );
 }
 
 const sendData = () => {
-  fetch(url, {
+  fetch(storePostDataCloudFunctionUrl, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -180,10 +187,12 @@ const sendData = () => {
       image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
     })
   })
-    .then(res => {
-      console.log('Sent Data', res);
-      updateUI()
-    });
+    .then(
+      res => {
+        console.log('Sent Data', res);
+        // update the UI....
+      }
+    );
 };
 
 
@@ -210,35 +219,40 @@ form.addEventListener('submit', event => {
   ) {
     // make sure that the SW is ready (installed and activated)
     navigator.serviceWorker.ready
-      .then(sw => {
-        // need to acces the SW here because the SW cannot listen to the form events (remember no access to the DOM)
+      .then(
+        sw => {
+          // need to access the SW here because the SW cannot listen to the form events (remember no access to the DOM)
 
-        const post = {
-          // uid
-          id: new Date().toISOString(),
-          title: titleInput.value,
-          location: locationInput.value
-        }
+          const post = {
+            // uid
+            id: new Date().toISOString(),
+            title: titleInput.value,
+            location: locationInput.value
+          }
 
-        // store post in indexedDB
-        writeData('sync-posts', post)
-          .then(() => {
-            // register sync event ONLY AFTER data to be posted has been stored
-            // sw.sync = gives access to SyncManager  from SW POV
-            // takes an id for the task
-            return sw.sync.register('sync-new-posts');
-          })
-          .then(() => {
-            // getthe toaster element
-            const snackbarContainer = document.querySelector('#confirmation-toast');
+          // store post in indexedDB
+          writeData('sync-posts', post)
+            .then(
+              () => {
+                // register sync event ONLY AFTER data to be posted has been stored
+                // sw.sync = gives access to SyncManager  from SW POV
+                // takes an id for the task
+                return sw.sync.register('sync-new-posts');
+              }
+            )
+            .then(
+              () => {
+                // getthe toaster element
+                const snackbarContainer = document.querySelector('#confirmation-toast');
 
-            const data = { message: 'Your Post is Saved for Synching' };
-            snackbarContainer.MaterialSnackbar.showSnackbar(data);
-          })
-          .catch(err => {
-            console.log('SYNC ERROR', err);
-          });
-      });
+                const data = { message: 'Your Post is Saved for Synching' };
+                snackbarContainer.MaterialSnackbar.showSnackbar(data);
+              }
+            )
+            .catch(err => {
+              console.log('SYNC ERROR', err);
+            });
+        });
 
   }
   // SyncManager not supported

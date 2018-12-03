@@ -1,17 +1,8 @@
-// import a script from a file
 importScripts('/src/js/idb.js')
 importScripts('/src/js/utility.js')
 
-
-
-// self refers to the server worker
-// listenable events to service workers, not DOM events
-
-// the cache storage is not where you want to store files (json, etc)
-// only store there the APP SHELL
-
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v61';
+const CACHE_STATIC_NAME = 'static-v66';
 const CACHE_DYNAMIC_NAME = 'dynamic-v14';
 const STATIC_FILES = [
     '/', // request = mydomain/
@@ -30,7 +21,7 @@ const STATIC_FILES = [
     'https://fonts.googleapis.com/icon?family=Material+Icons',
     'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
 ];
-const url = 'https://pwagram-f2685.firebaseapp.com';
+const storePostDataCloudFunctionUrl = 'https://us-central1-pwagram-f2685.cloudfunctions.net/storePostData';
 
 /* const trimCache = (cacheNane, maxItems) => {
     // open the cache
@@ -47,7 +38,7 @@ const url = 'https://pwagram-f2685.firebaseapp.com';
                 });
         })
 
-}ò */
+} */
 
 
 // install event triggered by browser
@@ -108,7 +99,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
     // this is the only url for which we should the SW counterpart, not for others
-    //const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
+    const url = 'https://pwagram-f2685.firebaseio.com/posts.json';
 
 
     if (event.request.url.indexOf(url) > -1) {
@@ -297,42 +288,73 @@ self.addEventListener('sync', event => {
         // waitt until data is sent
         event.waitUntil(
             readAllData('sync-posts')
-                .then(data => {
-                    // loop through new posts to synch
-                    for (let post of data) {
-                        fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                id: post.id,
-                                title: post.title,
-                                location: post.location,
-                                image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
+                .then(
+                    data => {
+                        // loop through new posts to synch
+                        for (let post of data) {
+                            fetch(storePostDataCloudFunctionUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    id: post.id,
+                                    title: post.title,
+                                    location: post.location,
+                                    image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
+                                })
                             })
-                        })
-                            // clean the sync-new-posts store
-                            .then(
-                                res => {
-                                    // ONLY delete from indexedDB if data sent succesfully
-                                    if (res.ok) {
-                                        res
-                                            .json()
-                                            .then(resData => {
-                                                console.log('[SERVICE WORKER] POST SENT');
-                                                deleteItemFromData('sync-posts', resData.id)
-                                            });
+                                // clean the sync-new-posts store
+                                .then(
+                                    res => {
+                                        // ONLY delete from indexedDB if data sent succesfully
+                                        if (res.ok) {
+                                            res
+                                                .json()
+                                                .then(
+                                                    resData => {
+                                                        console.log('[SERVICE WORKER] POST SENT');
+                                                        deleteItemFromData('sync-posts', resData.id);
+                                                    }
+                                                );
+                                        }
                                     }
-                                }
-                            )
-                            .catch(err => {
-                                console.log('[SERVICE WORKER] ERROR WHILE SENDING DATA', err);
-                            });
+                                )
+                                .catch(
+                                    err => {
+                                        console.log('[SERVICE WORKER] ERROR WHILE SENDING DATA', err);
+                                    }
+                                );
+                        }
                     }
-                })
+                )
         );
     }
 }
 );
+
+self.addEventListener('notificationclick', event => {
+    // which notification
+    const notification = event.notification;
+
+    //   which action has been clicked
+    const action = event.action;
+
+    console.log('[SERVICE WORKER] NOTIFICATION CLICKED', notification);
+
+    switch (action) {
+        case 'confirm': {
+            console.log('Confirm action was clicked');
+            // automatic on some devices
+            return notification.close();
+        }
+        default:
+            console.log(action);
+            return notification.close();
+    }
+});
+
+self.addEventListener('notificationclose', event => {
+    console.log('[SERVICE WORKER] NOTIFICATION CLOSED', event);
+});
