@@ -1,8 +1,8 @@
-importScripts('/src/js/idb.js')
-importScripts('/src/js/utility.js')
+importScripts('/src/js/idb.js');
+importScripts('/src/js/utility.js');
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v66';
+const CACHE_STATIC_NAME = 'static-v67';
 const CACHE_DYNAMIC_NAME = 'dynamic-v14';
 const STATIC_FILES = [
     '/', // request = mydomain/
@@ -52,35 +52,43 @@ self.addEventListener('install', event => {
         // to cache updated files, you give new VERSIONED NAME = will cache all files again
         // you don't want to update old cache because could still be used, so you create a new sub cache to store updated files
         caches.open(CACHE_STATIC_NAME)
-            .then(cache /* reference to opened cache */ => {
-                // add files to the cache
-                console.log('[SERVICE WORKER] Precaching app shell (core features of app)');
-                // make a REQUEST to the resource from server, download it and and add it to the cache
+            .then(
+                // reference to opened cache
+                cache => {
+                    // add files to the cache
+                    console.log('[SERVICE WORKER] Precaching app shell (core features of app)');
+                    // make a REQUEST to the resource from server, download it and and add it to the cache
 
-                cache.addAll(STATIC_FILES);
-            })
+                    cache.addAll(STATIC_FILES);
+                }
+            )
     );
 });
 
 // activate event triggered by browser
 // service worker will not be auto activated if older SW already running (unless "update on reload" option is selected)
 self.addEventListener('activate', event => {
-    console.log('[SERVICE WORKER] Activating service worker', event)
+    console.log('[SERVICE WORKER] Activating service worker', event);
     // to clean up older cache to avoid using outdated versions of files
     event.waitUntil(
         // returns an array of strings of keys of all the sub caches in the cache storage
         caches.keys()
-            .then(keyList => {
-                // takes an array of promises and waits for them to finish
-                return Promise.all(keyList.map(key => {
-                    if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
-                        console.log('[SERVICE WORKER] Removing old cache', key);
-                        //   return a promise that will be stored in array returned by map()
-                        return caches.delete(key);
-                    }
+            .then(
+                keyList => {
+                    // takes an array of promises and waits for them to finish
+                    return Promise.all(
+                        keyList.map(
+                            key => {
+                                if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
+                                    console.log('[SERVICE WORKER] Removing old cache', key);
+                                    //   return a promise that will be stored in array returned by map()
+                                    return caches.delete(key);
+                                }
+                            }
+                        )
+                    );
                 }
-                ))
-            })
+            )
     );
     // ensure that service worker is activated correctly
     return self.clients.claim();
@@ -105,24 +113,28 @@ self.addEventListener('fetch', event => {
     if (event.request.url.indexOf(url) > -1) {
         event.respondWith(
             fetch(event.request)
-                .then(res => {
-                    // store the formatted response into indexedDB
-                    const copyResponse = res.clone();
+                .then(
+                    res => {
+                        // store the formatted response into indexedDB
+                        const copyResponse = res.clone();
 
-                    // clear DB to avoid keeping data deleted on server
-                    clearAllData('posts')
-                        .then(() => copyResponse.json())
-                        .then(data => {
-                            // store every item in indexedDBk
-                            for (let key in data) {
-                                // store post in indexedDB
-                                writeData('posts', data[key])
-                            }
-                        });
+                        // clear DB to avoid keeping data deleted on server
+                        clearAllData('posts')
+                            .then(() => copyResponse.json())
+                            .then(
+                                data => {
+                                    // store every item in indexedDBk
+                                    for (let key in data) {
+                                        // store post in indexedDB
+                                        writeData('posts', data[key]);
+                                    }
+                                }
+                            );
 
-                    // return the response so that the page can use it
-                    return res;
-                })
+                        // return the response so that the page can use it
+                        return res;
+                    }
+                )
         );
     } else
         // check if request is about a static file
@@ -131,45 +143,55 @@ self.addEventListener('fetch', event => {
             event.respondWith(
                 // we don't care about the netwrk, we only return assets from cache
                 caches.match(event.request)
-            )
+            );
         } else {
             // fallback on the cache and network strategy
             event.respondWith(
                 caches.match(
                     event.request
                 )
-                    .then(response => {
-                        if (response) {
-                            return response;
-                        } else {
-                            return fetch(event.request)
-                                .then(res => {
-                                    return caches.open(CACHE_DYNAMIC_NAME)
-                                        .then(cache => {
-                                            // trim sub cache before puting more
-                                            // trimCache(CACHE_DYNAMIC_NAME, 3);
-                                            cache.put(
-                                                event.request.url,
-                                                res.clone()
-                                            );
+                    .then(
+                        response => {
+                            if (response) {
+                                return response;
+                            } else {
+                                return fetch(event.request)
+                                    .then(
+                                        res => {
+                                            return caches.open(CACHE_DYNAMIC_NAME)
+                                                .then(
+                                                    cache => {
+                                                        // trim sub cache before puting more
+                                                        // trimCache(CACHE_DYNAMIC_NAME, 3);
+                                                        cache.put(
+                                                            event.request.url,
+                                                            res.clone()
+                                                        );
 
-                                            return res;
-                                        });
-                                })
-                                .catch(err => {
-                                    return caches.open(CACHE_STATIC_NAME)
-                                        .then(cache => {
-                                            // routing strategy
-                                            // only return the offline page if the request is to a page
-                                            if (event.request.headers.get('accept').includes('text/html')) {
-                                                return cache.match('/offline.html');
-                                            }
-                                            // you can return ant fallback resource that was cached (image...)
-                                        })
-                                });
+                                                        return res;
+                                                    }
+                                                );
+                                        }
+                                    )
+                                    .catch(
+                                        err => {
+                                            return caches.open(CACHE_STATIC_NAME)
+                                                .then(
+                                                    cache => {
+                                                        // routing strategy
+                                                        // only return the offline page if the request is to a page
+                                                        if (event.request.headers.get('accept').includes('text/html')) {
+                                                            return cache.match('/offline.html');
+                                                        }
+                                                        // you can return ant fallback resource that was cached (image...)
+                                                    }
+                                                );
+                                        }
+                                    );
+                            }
                         }
-                    })
-            )
+                    )
+            );
         }
 });
 
@@ -349,12 +371,44 @@ self.addEventListener('notificationclick', event => {
             // automatic on some devices
             return notification.close();
         }
-        default:
-            console.log(action);
+        default: {
+            console.log('ACTION CLICKED: ', action);
             return notification.close();
+        }
     }
 });
 
 self.addEventListener('notificationclose', event => {
     console.log('[SERVICE WORKER] NOTIFICATION CLOSED', event);
+});
+
+self.addEventListener('push', event => {
+    console.log('PUSH NOTIFICATION RECEIVED !!', event);
+
+    // set up a dummy data in case as a fallback if no payload
+    // the properties must have the same identifiers as the ones in the payload that we pass when sending the push notification on our backend server to the browser vendor endpoint
+    let data = {
+        title: 'New !',
+        Content: 'Something New Happened'
+    };
+
+    // check if there is a payload/data attached to the received push notification
+    if (event.data) {
+        data = JSON.parse(
+            // retrieve the the text from the data
+            event.data.text()
+        );
+
+        // show a new notification
+        const notificationOptions = {
+            body: data.Content,
+            icon: '/src/images/icons/app-icon-96x96.png',
+            badge: '/src/images/icons/app-icon-96x96.png'
+        };
+
+        // display the notification
+        event.waitUntil(
+            // have to access to the registration because the SW by itself cannot show the notification
+        );
+    }
 });

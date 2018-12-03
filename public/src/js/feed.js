@@ -14,7 +14,7 @@ function openCreatePostModal() {
     // position we want to end in
     createPostArea.style.transform = 'translateY(0)';
 
-  }, 1)
+  }, 1);
 
   if (deferredPrompt) {
     deferredPrompt.prompt();
@@ -46,10 +46,12 @@ function openCreatePostModal() {
 }
 
 function closeCreatePostModal() {
-  setTimeout(() => {
-    createPostArea.style.transform = 'translateY(100vh)';
-  }
-    , 3)
+  setTimeout(
+    () => {
+      createPostArea.style.transform = 'translateY(100vh)';
+    }
+    , 3
+  );
 }
 
 shareImageButton.addEventListener('click', openCreatePostModal);
@@ -71,11 +73,11 @@ const onSaveButtonClick = event => {
 
       });
   }
-}
+};
 
 function clearCart() {
   while (sharedMomentsArea.hasChildNodes()) {
-    sharedMomentsArea.removeChild(sharedMomentsArea.lastChild)
+    sharedMomentsArea.removeChild(sharedMomentsArea.lastChild);
   }
 }
 
@@ -94,7 +96,7 @@ function createCard(data) {
 
   cardWrapper.appendChild(cardTitle);
 
-  cardTitleTextElement.style.color = 'white'
+  cardTitleTextElement.style.color = 'white';
   cardTitleTextElement.className = 'mdl-card__title-text';
   cardTitleTextElement.textContent = data.title;
 
@@ -134,17 +136,17 @@ const updateUI = postList => {
   postList.forEach(post => {
     createCard(post);
   });
-}
+};
 
 const fromObjArr = obj => {
   const postData = [];
 
   for (let key in obj) {
-    postData.push(obj[key])
+    postData.push(obj[key]);
   }
 
   return postData;
-}
+};
 
 // fetch posts
 fetch(dbUrl)
@@ -228,7 +230,7 @@ form.addEventListener('submit', event => {
             id: new Date().toISOString(),
             title: titleInput.value,
             location: locationInput.value
-          }
+          };
 
           // store post in indexedDB
           writeData('sync-posts', post)

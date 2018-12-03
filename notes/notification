@@ -127,3 +127,19 @@ When we unregistera SW, we render all subscriptions USELESS
 
 if we clear/unregister a SW, you need to clear the related subscriptions saved on our backend server
 
+====================
+reacting to push messages on the frontend
+====================
+
+add an event listener in the SW
+
+because we want to react to push messages when the browser is not open, you listen for push events in the SW
+
+this liatener will react to when we receive an incoming push message that is
+	when this SW on this browser on this device has a subscription to which a message was sent
+
+each subscription stored on the server has its own endpoint
+	therefore if we send a mpush message from the server to that subscription, this SW who created the subscription will receive it
+	that is why if you unregister an existing SW in a browser you must also remove the associated subscription stored in the DB server
+	A newly created SW will generate new sunscriptions
+

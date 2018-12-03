@@ -1,4 +1,4 @@
-let deferredPrompt;
+var deferredPrompt;
 const enableNotificationsButtons = document.querySelectorAll('.enable-notifications');
 
 if (!window.Promise) {
@@ -13,12 +13,16 @@ if ('serviceWorker' in navigator) {
     // register the service worker file
     // can take a second argument object to define options like the scope to restrict it programmatically
     .register('/sw.js')
-    .then(function () {
-      console.log('Service worker registered!');
-    })
-    .catch(error => {
-      console.log(error)
-    });
+    .then(
+      () => {
+        console.log('Service worker registered!');
+      }
+    )
+    .catch(
+      error => {
+        console.log('ERROR REGISTERING WHEN SERVICE WORKER', error);
+      }
+    );
 }
 
 // prevent browser from showing home screen add when arriving on app
@@ -63,7 +67,7 @@ const displayConfirmNotification = () => {
             // sw interface to Motification
             .showNotification('Successfully Subscribed!', notificationOptions);
         }
-      )
+      );
   }
 
   // notification in normal JS context
@@ -86,12 +90,12 @@ const configurePushNotification = () => {
         // access push manager and check subscriptions (browser + device combination)
         return swRegistration.pushManager
           // returns existing subscriptions, returns a promise
-          .getSubscription()
+          .getSubscription();
       }
     )
     .then(
       subscriptions => {
-        const vapidPublickey = 'BBUzrqqZy2dyJdsrC534YHFbmMpC2oQD1pwLfizpXHpcTRxjkaZdkVfEqNaGnmyg9_nkbTIaXB88Dzg-rl_n3p8';
+        const vapidPublickey = 'BHdR_I5zBdhMGHyP1zRPInpWhWg9Ri5PbgmbByNSZ4TD2wjckjIn1aOtuXyhGclYRuG_Do2dml7DGBsSriwnURw';
         const vapidPublickeyAsUIntArray = urlBase64ToUint8Array(vapidPublickey);
 
 
@@ -135,11 +139,11 @@ const configurePushNotification = () => {
                 console.log('ERROR', err);
               }
 
-            )
+            );
         }
       }
 
-    )
+    );
 };
 
 
@@ -160,11 +164,14 @@ const askForNotificationPermission = () => {
 
     }
   );
-}
+};
 
 
 if ('serviceWorker' in navigator && 'Notification' in window) {
+  console.log('notification permission is', Notification.permission);
+
   for (let notifButton of enableNotificationsButtons) {
+
     switch (Notification.permission) {
       case 'granted':
       default: notifButton.style.display = 'inline-block';
