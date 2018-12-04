@@ -4,7 +4,7 @@ const cors = require('cors')({ origin: true }); // send right headers to access 
 const webpush = require('web-push');
 
 const serviceAccount = require('./pwagram-.json');
-const webpushVapidKeys = require('./webpushVapidKeys.json')
+const webpushVapid = require('./webpushVapid.json')
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -36,11 +36,11 @@ exports.storePostData = functions.https.onRequest((request, response) => {
                     //  start sending your push notification
                     webpush.setVapidDetails(
                         // identification of self
-                        'mailto:gotoflorian.pro@gmail.com',
+                        webpushVapid.mail,
                         // pubkey
-                        webpushVapidKeys.pub,
+                        webpushVapid.pub,
                         // privkey
-                        webpushVapidKeys.priv
+                        webpushVapid.priv
                     );
 
                     // send a push request to all of our subscriptions:
