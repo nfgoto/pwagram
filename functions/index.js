@@ -73,9 +73,13 @@ exports.storePostData = functions.https.onRequest((request, response) => {
                                 webpush.sendNotification(
                                     pushConfiguration,
                                     // any payload we want to pass along the push notification - sizr is limited
-                                    JSON.stringify({ title: 'New Post', content: 'New Post Added' })
+                                    JSON.stringify({ 
+                                        title: 'New Post',
+                                        content: 'New Post Added',
+                                        openUrl: '/help'
+                                    })
                                 )
-                                    .catch(
+                                 .catch(
                                         err => {
                                             console.log(err);
                                         }
