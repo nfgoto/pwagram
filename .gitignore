@@ -9,7 +9,8 @@ firebase-debug.log*
 
 
 # firebase backend
-functions/**
+functions/pwagram-.json
+functions/webpushVapidKeys.json
 
 # Firebase cache
 .firebase/

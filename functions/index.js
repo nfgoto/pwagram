@@ -3,8 +3,8 @@ const admin = require('firebase-admin');
 const cors = require('cors')({ origin: true }); // send right headers to access HTTP endpoint from a different domain
 const webpush = require('web-push');
 
-const serviceAccount = require("./pwagram-.json");
-
+const serviceAccount = require('./pwagram-.json');
+const webpushVapidKeys = require('./webpushVapidKeys.json')
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -38,9 +38,9 @@ exports.storePostData = functions.https.onRequest((request, response) => {
                         // identification of self
                         'mailto:gotoflorian.pro@gmail.com',
                         // pubkey
-                        'BHdR_I5zBdhMGHyP1zRPInpWhWg9Ri5PbgmbByNSZ4TD2wjckjIn1aOtuXyhGclYRuG_Do2dml7DGBsSriwnURw',
+                        webpushVapidKeys.pub,
                         // privkey
-                        'O5oYAV_lsUH6jw_0wP1BRCQqsTfmmk1fgBYMY1dnPL0'
+                        webpushVapidKeys.priv
                     );
 
                     // send a push request to all of our subscriptions:
