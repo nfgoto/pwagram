@@ -95,7 +95,7 @@ const configurePushNotification = () => {
     )
     .then(
       subscriptions => {
-        const vapidPublickey = 'BHdR_I5zBdhMGHyP1zRPInpWhWg9Ri5PbgmbByNSZ4TD2wjckjIn1aOtuXyhGclYRuG_Do2dml7DGBsSriwnURw';
+        const vapidPublickey = 'BESMv6ZoUpsxK7oDSVqCKrXj9gPE2cso88HoWGjF9ATr8OPJcpbTbUK20H0LpKySDPixsRGi7ot5kLziz9qUUfI';
         const vapidPublickeyAsUIntArray = urlBase64ToUint8Array(vapidPublickey);
 
 
