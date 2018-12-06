@@ -5,14 +5,127 @@ const sharedMomentsArea = document.querySelector('#shared-moments');
 const form = document.querySelector('form');
 const titleInput = document.querySelector('#title');
 const locationInput = document.querySelector('#location');
+const videoPlayer = document.querySelector('#player');
+const canvasElement = document.querySelector('#canvas');
+const captureButton = document.querySelector('#capture-btn');
+const imagePicker = document.querySelector('#image-picker');
+const imagePickerArea = document.querySelector('#pick-image');
+let picture;
 
+// initialize the camera or image picker based on device
+const initializeMedia = () => {
+  // access to camera on as many devices as possible, in a progressive way
+
+  // mediaDevices gives access to the camera and audio
+  if (!('mediaDevices' in navigator)) {
+    // create a polyfill
+    navigator.mediaDevices = {};
+  }
+
+  // map the older media access APIs to the new syntax = polyfill
+  if (!('getUserMedia' in navigator.mediaDevices)) {
+    navigator.mediaDevices.getUserMedia =
+      // constraints = is it audio or video o capture ?
+      constraints => {
+        const getUserMedia = navigator.webkitGetUserMedia || navigator.mozFetUserMedia;
+
+        // for very old browsers like IE
+        if (!getUserMedia) {
+          return Promise.reject('Please update to a modern browser.');
+        }
+
+        // if you get so far you have a getUserMedia available
+        return new Promise(
+          (resolve, reject) => {
+            getUserMedia.call(
+              navigator, // = this pointer
+              // arguments passed when calling
+              constraints,
+              resolve,
+              reject
+            );
+          }
+        );
+
+      };
+  }
+
+  // safe to use because of the above polyfills
+  navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: false // or just don't put this property if false
+  })
+    .then(
+      stream => {
+        // the video element can display a stream
+        // will autoplay (set on the element)
+        videoPlayer.srcObject = stream;
+        // show the videoplayer
+        videoPlayer.style.display = 'block';
+      }
+    )
+    .catch(
+      err => {
+        console.log('Media access failed. Fallback on image picker', err);
+
+        // show image picker instead
+        imagePickerArea.style.display = 'block';
+      }
+
+    );
+};
+
+captureButton.addEventListener('click', event => {
+  // get the image off the stream of the camera and send it to the canvas (latest snapshot)
+
+  // show the canvas
+  canvasElement.style.display = 'block';
+  // hide the videoplayer, even if hidden the stream is still going on...
+  videoPlayer.style.display = 'none';
+  // show that the capture is taken by hiding the button
+  captureButton.style.display = 'none';
+
+  // get the stream on the canvas
+
+  // context for the canvas
+  const context = canvasElement
+    // how we want to draw on this image
+    .getContext(
+      // 2d image
+      '2d'
+    );
+  context.drawImage(
+    // use the videoplayer as an image element, will auto give the stream
+    videoPlayer,
+    // define the boundaries
+    0, 0,
+    canvasElement.width,
+    videoPlayer.videoHeight / (videoPlayer.videoWidth / canvasElement.width)
+  );
+
+  // stop the stream of the camera
+  videoPlayer.srcObject
+    // give us access to all video streams on this element 
+    .getVideoTracks()
+    // stop all tracks
+    .forEach(
+      track => {
+        track.stop();
+      }
+    );
+
+  // get base64 representation of the image captured and convert it to a file
+  picture = dataURItoBlob(canvasElement.toDataURL());
+});
 
 function openCreatePostModal() {
   createPostArea.style.display = 'block';
-  // to not apply the style immediately
+
+  // to not apply the style immediately (transition defay effect)
   setTimeout(() => {
     // position we want to end in
     createPostArea.style.transform = 'translateY(0)';
+    initializeMedia();
 
   }, 1);
 
@@ -46,9 +159,14 @@ function openCreatePostModal() {
 }
 
 function closeCreatePostModal() {
+  // to not apply the style immediately (transition defay effect)
   setTimeout(
     () => {
       createPostArea.style.transform = 'translateY(100vh)';
+      // cleanup the media
+      imagePickerArea.style.display = 'none';
+      videoPlayer.style.display = 'none';
+      canvasElement.style.display = 'none';
     }
     , 3
   );
@@ -176,18 +294,23 @@ if ('indexedDB' in window) {
 }
 
 const sendData = () => {
+  const id = new Date().toDateString();
+  // use built'in FormData constructor to send ky/value pairs as well as files
+  const postData = new FormData();
+
+  postData.append('id', id);
+  postData.append('title', titleInput.value);
+  postData.append('location', locationInput.value);
+  postData.append(
+    'file',
+    picture,
+    //  override name of the file
+    `${id}.png`
+  );
+
   fetch(storePostDataCloudFunctionUrl, {
     method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      id: new Date().toDateString(),
-      title: titleInput.value,
-      location: locationInput.value,
-      image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
-    })
+    body: postData
   })
     .then(
       res => {
@@ -229,7 +352,8 @@ form.addEventListener('submit', event => {
             // uid
             id: new Date().toISOString(),
             title: titleInput.value,
-            location: locationInput.value
+            location: locationInput.value,
+            picture
           };
 
           // store post in indexedDB
@@ -262,11 +386,6 @@ form.addEventListener('submit', event => {
     // send data directly to the server
     sendData();
   }
-
-
-
-
-
 });
 
 

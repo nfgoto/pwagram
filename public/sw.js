@@ -2,13 +2,14 @@ importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
 // latest cache version names
-const CACHE_STATIC_NAME = 'static-v67';
-const CACHE_DYNAMIC_NAME = 'dynamic-v14';
+const CACHE_STATIC_NAME = 'static-v77';
+const CACHE_DYNAMIC_NAME = 'dynamic-v15';
 const STATIC_FILES = [
     '/', // request = mydomain/
     '/index.html', // request = mydomain/index.html
     '/offline.html',
     '/src/js/app.js',
+    '/src/js/utility.js',
     '/src/js/feed.js',
     '/src/js/idb.js',
     '/src/js/promise.js',
@@ -314,18 +315,21 @@ self.addEventListener('sync', event => {
                     data => {
                         // loop through new posts to synch
                         for (let post of data) {
+                            // FormData built-in JS constructor that allow to send mix of key/value pairs with files through AJAX
+                            const postData = new FormData();
+                            postData.append('id', post.id);
+                            postData.append('title', post.title);
+                            postData.append('location', post.location);
+                            postData.append(
+                                'file',
+                                post.picture,
+                                //  override name of the file
+                                `${post.id}.png`
+                            );
+
                             fetch(storePostDataCloudFunctionUrl, {
                                 method: 'POST',
-                                headers: {
-                                    'Content-type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    id: post.id,
-                                    title: post.title,
-                                    location: post.location,
-                                    image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-f2685.appspot.com/o/ingenico-card-swipe-machine-500x500.jpg?alt=media&token=5f2cd33a-b302-433b-a868-d366575f67b3'
-                                })
+                                body: postData  // Content'type header is inferred
                             })
                                 // clean the sync-new-posts store
                                 .then(
