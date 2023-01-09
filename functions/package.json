@@ -14,8 +14,8 @@
     "@google-cloud/storage": "^2.3.1",
     "ajv-keywords": "^2.1.1",
     "cors": "^2.8.5",
-    "firebase-admin": "^6.3.0",
-    "firebase-functions": "^2.1.0",
+    "firebase-admin": "^11.4.1",
+    "firebase-functions": "^4.1.1",
     "formidable": "^1.2.1",
     "uuid-v4": "^0.1.0",
     "web-push": "^3.3.3"
